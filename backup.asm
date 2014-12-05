@@ -4,7 +4,7 @@
 #offset_of_data:4
 .data
         header:        .space 16
-        path1:      .asciiz "/Users/kacper/Studia/Assembly/8.bmp"
+        path1:      .asciiz "/Users/kacper/Studia/Assembly/10.bmp"
         output: .asciiz "/Users/kacper/Studia/Assembly/out.bmp"
         hello: .asciiz " helloOne\n"
         hellozero: .asciiz " helloZERO\n"
@@ -264,8 +264,7 @@ one:
       
       
       
-      #s0 - pisanie do pliku
-      #t1 - czytanie z pliku
+      #
 end:         # tworzymy output bitmape.
 la   $a0,   path1
 li   $a2,   0
@@ -279,108 +278,39 @@ move    $t1,    $v0 #przechowujemy deskryptor pliku.
   li   $a1, 1        # Open for writing (flags are 0: read, 1: write)
   li   $a2, 0        # mode is ignored
   syscall            # open a file (file descriptor returned in $v0)
-  move $s0, $v0      # save the file descriptor 
+  move $s6, $v0      # save the file descriptor 
+
+
+
+      #ladujemy header!
+       move   $a0,   $t1
+      li    $v0,   14  #read from file     
+      la    $a1,    mega   
+      li    $a2,    2
+      syscall 
+      
+       ###############################################################
   
-  #ladujemy pierwsze 2 bajty.
-  move   $a0,   $t1
-  li    $v0,   14  #read from file     
-  la    $a1,    mega   
-  li    $a2,    2
-  syscall 
-# piszemy te 2 bajty
-  li   $v0, 15       # system call for write to file
-  move $a0, $s0      # file descriptor 
-  la   $a1, mega   # address of buffer from which to write
-  li   $a2, 2       # hardcoded buffer length
-  syscall            # write to file
-  
-  
-  #czytamy kolejne 4(file size, ktory bedzie OLANY
-  move   $a0,   $t1
-  li    $v0,   14  #read from file     
-  la    $a1,    mega   
-  li    $a2,    4
-  syscall 
-  
-  # obliczamy wielkosc pliku
-  li $t5, 130
-  mul $t6, $s6, $s3
-  add $t5, $t5, $t6
-  
-  usw $t5, mega
-  #piszemy rozmiar
-  li   $v0, 15       # system call for write to file
-  move $a0, $s0      # file descriptor 
-  la   $a1, mega   # address of buffer from which to write
-  li   $a2, 4       # hardcoded buffer length
-  syscall            # write to file
-  
-  move   $a0,   $t1
-  li    $v0,   14  #read from file     
-  la    $a1,    mega   
-  li    $a2,    12
-  syscall 
-  #piszemy 12 stalych bajtow
-  li   $v0, 15       # system call for write to file
-  move $a0, $s0      # file descriptor 
-  la   $a1, mega   # address of buffer from which to write
-  li   $a2, 12       # hardcoded buffer length
-  syscall            # write to file
-  #czytamy szerokosc i wysokosc
-  move   $a0,   $t1
-  li    $v0,   14  #read from file     
-  la    $a1,    mega   
-  li    $a2,    8
-  syscall 
-  
-  usw $s4, mega
-  #piszemy szerokosc
+  ###############################################################
+  # Write to file just opened
   li   $v0, 15       # system call for write to file
   move $a0, $s6      # file descriptor 
   la   $a1, mega   # address of buffer from which to write
-  li   $a2, 4       # hardcoded buffer length
+  li   $a2, 130       # hardcoded buffer length
   syscall            # write to file
-  usw $s3, mega
-  li   $v0, 15       # system call for write to file
-  move $a0, $s6      # file descriptor 
-  la   $a1, mega   # address of buffer from which to write
-  li   $a2, 4       # hardcoded buffer length
-  syscall            # write to file
+  ###############################################################
   
-  #czytamy i piszemy pozostale bajty az do tablicy pikseli
-  
-  #czytamy szerokosc i wysokosc
-    move   $a0,   $t1
-  li    $v0,   14  #read from file     
-  la    $a1,    mega   
-  li    $a2,    104
-  syscall 
-  
-  li   $v0, 15       # system call for write to file
-  move $a0, $s0      # file descriptor 
-  la   $a1, mega   # address of buffer from which to write
-  li   $a2, 104       # hardcoded buffer length
-  syscall            # write to file
-  
-  
-#piszemy tablice pikseli 
   li   $v0, 15       # system call for write to file
   move $a0, $s6      # file descriptor 
   move   $a1, $t2   # address of buffer from which to write
-  move   $a2, $t5       # hardcoded buffer length
+  li   $a2, 40       # hardcoded buffer length
   syscall            # write to file
-  # Close the file (writer)
+  # Close the file 
   li   $v0, 16       # system call for close file
-  move $a0, $s0      # file descriptor to close
+  move $a0, $s6      # file descriptor to close
   syscall            # close file
-  #close the writer
-  li   $v0, 16       # system call for close file
-  move $a0, $t1      # file descriptor to close
-  syscall            # close file
-  
-  
   ###############################################################
-     #end 
+      
       li	$v0,	10
       syscall
 
