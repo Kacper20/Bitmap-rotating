@@ -1,15 +1,9 @@
-#BM:2
-#sizeof_file:4
-#nieważne:4
-#offset_of_data:4
+
 .data
         header:        .space 16
-        path1:      .asciiz "/Users/kacper/Studia/Assembly/8.bmp"
+        input:      .asciiz "/Users/kacper/Studia/Assembly/szachownica.bmp"
         output: .asciiz "/Users/kacper/Studia/Assembly/out.bmp"
-        hello: .asciiz " helloOne\n"
-        hellozero: .asciiz " helloZERO\n"
-        switch: .asciiz "switch\n"
-        spa: .space 14
+
         mega: .space 300
 .text 
 #t1 - file descriptor(opening), pozniej sluzy do trzymania w ktorym pixelu bylismy dla danego wiersza
@@ -18,16 +12,13 @@
 #t0 - adres zaalokowanej pamieci przez nas, do trzymania input bitmapy.
 #s0  - pamiec do zaalokowania(rozmiar), pozniej uzywany jako tymczasowy
 #s1 - offset, pozniej tez uzywany jako tymczasowy
-
-
 #s3 - szerokosc bitmapy(oryginalnej) i wysokosc zmienionej
 #s4 - wysokosc bitmapy (oryginalnej) i szerokosc zmienionej.
 #s5 = rozmiar wiersza orginalnego obrazka(po dodaniu paddingu)
 #s6 - szerokosc bitmapy(w bajtach) po zmianach -
-
 #s2, s7 - wolne, uzywane w ONE.
 main:
-      la   $a0,   path1
+      la   $a0,   input
       li   $a2,   0
       li   $a1,   0 
       li   $v0,   13 #open file
@@ -112,18 +103,11 @@ main:
       li    $v0, 9
       syscall
       move $t2 ,$v0
-      
-      
-     
        #ustawianie wskaznika pliku - jest ustawiony na tablice pikseli obecnie.
       sub $s1,	$s1, 14
       add $t0,	$t0, $s1 
       
       #t0 wskaznik ktorego nie zmieniamy!
-      
-      
-      
-      
       # w t1 mamy sobie tymczasowy wskaznik 
       
       move $t6, $s3 # bedziemy zmniejszali co 1. zaladowany jest iloscia bitow, ktore powinny byc w wierszu! :) 
@@ -131,8 +115,6 @@ main:
       lb $t4, ($t1) # do tymczasowego chodzenia po row
       li $t5, 1 #t5 bada w ktorym jestesmy wierszu
       li $t3, 0x80 # przygotowana maska
-      #S0, S1 uzywamy
-      
       # musimy ustawic na ostatni wiersz. wierszy jest tyle, ile kolumn oryginalnej. Wartosc trzymana jest w S3.
       #skaczymy za kazdym razem o padding dla nowej, czyli: s6
       
@@ -140,10 +122,6 @@ main:
       mul $t7, $s6, $t7
       # jestemy teraz s0 na 1 bajcie gornego rogu. 
       move $s0, $t2
-
-      #logi.
-
-      
       add $s0, $s0, $t7
       move $s1, $s0 # s1 trzyma ta wartosc, abysmy mogli pozniej wracac!
       # poruszamy sie s0.
@@ -151,48 +129,27 @@ main:
       li $t8, 0x80 #ladujemy maske do PISANIA
       b try_bits #zaczynamy chodzenie po tablicy pikseli
       
-try_bytes:       
-      li $t3, 0x80
-      add $t1, $t1, 1#przejscie do kolejnego bajtu 
-      lb $t4, ($t1)
+
 try_bits:
       beqz $t6, next_row #jesli juz zrobilismy wszystkie bity - skaczemy do nastepnego wiersza
       sub $t6, $t6, 1  #kolejny bit
       and $t7, $t4, $t3 #maskujemy, sprawdzamy wynik
       beq $t7, $t3, one 
-      
-      
-      
-      ###LOGIIII.
-      #wypisujemy na ktorym jestesmy pikselu i ktory ROW.
-      #najpierw wiersz:
-      move $a0, $t5
-      li $v0, 1
-      syscall
-      #log piksel.
-      sub $t7, $s3, $t6
-      move $a0, $t7
-      li $v0, 1
-      syscall     
-      la $a0, hellozero
-      li $v0, 4
-      syscall
-      
       #wskaznik piszacy przesuwamy.
-      sub $s0, $s0, $s6
-      
-      # znalezlismy zero
+            # znalezlismy zero
+      sub $s0, $s0, $s6   
       srl $t3, $t3, 1
-      beqz $t3, try_bytes # skonczyla nam sie maska, skaczemy do kolejnego bajtu.
-      #nie skonczyla sie - jeszcze raz try_bits.
-      #ZLE bo mamy skok warunkowy i bezwarunkowy - optymalizacja NA KONCU jesli zdarze.
+      bnez $t3, try_bits # skonczyla nam sie maska, skaczemy do kolejnego bajtu.    
+try_bytes:       
+      li $t3, 0x80
+      add $t1, $t1, 1#przejscie do kolejnego bajtu 
+      lb $t4, ($t1)
       b try_bits
       
 next_row:
       #zwiekszamy zmienna dotyczaca wskaznikaa.	
       add $t5, $t5, 1
       bgt $t5, $s4, end
-      
       li $t7, 7
       and $t7 $t5, $t7
       
@@ -210,11 +167,6 @@ next_row:
       b, try_bits
       
 switch_column:
-	la $a0, switch
-        li $v0, 4
-      syscall 
-	
-	
 	add $s1, $s1, 1
 	move $s0, $s1
 	li $t8, 0x80
@@ -223,33 +175,8 @@ switch_column:
       	move $t1, $t0
       	lb $t4, ($t1)
       	li $t3, 0x80 # maska do sprawdzania bitow na nowo
-      	b, try_bits
-	
-	
-      
+      	b, try_bits     
 one:
- 	#pod $t6 mamy ilosc pozostalych pikseli w wierszu. - 
- 	#t7 to wartosc rowna iloscwszystkich-ilosc tych ktore pozostaly == obecnypiksel na ktorym bylismy w oryginalnej
- 	# w t5 mamy ktory to byl wiersz wczesniej
- 	# w t1 ktory to byl piksel
- 	#s0  to  poczatek naszej tablicy pikseli w miejscu zaalokowanym wskazywanym przez t2(robimy tymczasowy wskaznik
- 	#s1 mowi nam ktory to teraz ma byc wiersz
- 	#s7 to licznik petli
- 	#jesli mielismy y wiersz, bedzie to teraz y piksel
- 	#jesli mielismy x piksel, bedzie to teraz (liczba kolumn w nowej - x) + 1 wiersz.	
- 	
- 	 #**********LOG*******    	 	     	 	
-      move $a0, $t5
-      li $v0, 1
-      syscall 
-      #log piksel.
-      sub $t7, $s3, $t6
-      move $a0, $t7
-      li $v0, 1
-      syscall 
-      la $a0, hello
-      li $v0, 4
-      syscall
       lb $t9, ($s0)
       or $t9, $t9, $t8
       sb $t9, ($s0)
@@ -267,7 +194,7 @@ one:
       #s0 - pisanie do pliku
       #t1 - czytanie z pliku
 end:         # tworzymy output bitmape.
-la   $a0,   path1
+la   $a0,   input
 li   $a2,   0
 li   $a1,   0 
 li   $v0,   13 #open file
@@ -377,11 +304,7 @@ move    $t1,    $v0 #przechowujemy deskryptor pliku.
   li   $v0, 16       # system call for close file
   move $a0, $t1      # file descriptor to close
   syscall            # close file
-  
-  
   ###############################################################
      #end 
       li	$v0,	10
       syscall
-
-        
